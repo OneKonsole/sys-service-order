@@ -60,7 +60,8 @@ func (a *App) Run(addr string) {
 // ===========================================================================================================
 func (a *App) Initialize() {
 
-	a.MQConnection = okmq.NewMQConnection("amqp://guest:guest@localhost:5672/")
+	a.MQConnection = okmq.NewMQConnection("amqp://admin:admin@my-rabbitmq.provisioning.svc.cluster.local:5672/")
+	// a.MQConnection = okmq.NewMQConnection("amqp://admin:admin@localhost:5672/")
 	a.MQChannel = okmq.NewMQChannel(a.MQConnection)
 	a.Router = mux.NewRouter()
 
