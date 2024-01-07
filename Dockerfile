@@ -8,6 +8,8 @@ RUN go mod download && go mod verify
 
 RUN go clean -modcache
 
+RUN go mod tidy
+
 COPY . . 
 
 RUN go build -o /onekonsole/sys-service-order/build/app
