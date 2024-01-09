@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
 
 	oko "github.com/OneKonsole/order-model"
 	okmq "github.com/OneKonsole/sys-queueing"
@@ -19,6 +20,15 @@ type App struct {
 	Router       *mux.Router
 	MQChannel    *amqp.Channel
 	MQConnection *amqp.Connection
+	AppConf      *AppConf
+}
+
+type AppConf struct {
+	ServedPort string `json:"served_port"`
+	MQUser     string `json:"mq_user"`
+	MQPassword string `json:"mq_password"`
+	MQUrl      string `json:"mq_url"`
+	MQVhost    string `json:"mq_vhost"`
 }
 
 // ===========================================================================================================
@@ -37,8 +47,8 @@ type App struct {
 //	a.Run("localhost:8010")
 //
 // ===========================================================================================================
-func (a *App) Run(addr string) {
-	log.Fatal(http.ListenAndServe(":8020", a.Router))
+func (a *App) Run() {
+	log.Fatal(http.ListenAndServe(":"+a.AppConf.ServedPort, a.Router))
 }
 
 // ===========================================================================================================
@@ -60,12 +70,25 @@ func (a *App) Run(addr string) {
 // ===========================================================================================================
 func (a *App) Initialize() {
 
-	a.MQConnection = okmq.NewMQConnection("amqp://admin:admin@my-rabbitmq.provisioning.svc.cluster.local:5672/")
-	// a.MQConnection = okmq.NewMQConnection("amqp://admin:admin@localhost:5672/")
+	rabbitConnectionString := fmt.Sprintf("amqp://%s:%s@%s:5672/%s",
+		a.AppConf.MQUser,
+		a.AppConf.MQPassword,
+		a.AppConf.MQUrl,
+		a.AppConf.MQVhost)
+	a.MQConnection = okmq.NewMQConnection(rabbitConnectionString)
 	a.MQChannel = okmq.NewMQChannel(a.MQConnection)
 	a.Router = mux.NewRouter()
 
 	a.initializeRoutes()
+}
+
+func (appConf *AppConf) Initialize() {
+	confFile, _ := os.ReadFile("app-configuration.json")
+
+	err := json.Unmarshal([]byte(confFile), &appConf)
+	if err != nil {
+		log.Fatalf("Unable to parse application config file due to : %s", err)
+	}
 }
 
 func (a *App) produceOrder(w http.ResponseWriter, r *http.Request) {
