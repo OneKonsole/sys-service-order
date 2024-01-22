@@ -1,0 +1,5 @@
+served_port=8020
+mq_user=admin
+mq_password=admin
+mq_URL=localhost
+mq_vhost=provisioning
