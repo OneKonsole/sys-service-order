@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -78,6 +79,10 @@ func produce(
 	channelContext, cancel := context.WithTimeout(context.Background(), time.Duration(maxProcessTime)*time.Second)
 	defer cancel()
 
+	fmt.Printf("[INFO] Preparing order production via exchange %s with routing key %s \n",
+		exchangeName,
+		routingKey)
+
 	err := channel.PublishWithContext(channelContext,
 		exchangeName,
 		routingKey,
@@ -89,5 +94,9 @@ func produce(
 			Body:         messageBody,
 		})
 
-	okmq.FailOnError(err, "Failed to produce messages for provisioning")
+	if err == nil {
+		fmt.Printf("[INFO] Produced a message in queue via routing key %s.\n", routingKey)
+	}
+
+	okmq.FailOnError(err, "[ERROR] Failed to produce messages for provisioning")
 }

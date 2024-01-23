@@ -69,7 +69,7 @@ func (a *App) Run() {
 //
 // ===========================================================================================================
 func (a *App) Initialize() {
-
+	fmt.Printf("[INFO] ...... Initializing app ......\n")
 	rabbitConnectionString := fmt.Sprintf("amqp://%s:%s@%s:5672/%s",
 		a.AppConf.MQUser,
 		a.AppConf.MQPassword,
@@ -78,7 +78,7 @@ func (a *App) Initialize() {
 	a.MQConnection = okmq.NewMQConnection(rabbitConnectionString)
 	a.MQChannel = okmq.NewMQChannel(a.MQConnection)
 	a.Router = mux.NewRouter()
-
+	fmt.Printf("[INFO] ...... Initializing routes ......\n")
 	a.initializeRoutes()
 }
 
@@ -89,7 +89,7 @@ func (appConf *AppConf) Initialize() {
 	appConf.MQUrl = os.Getenv("mq_URL")
 	appConf.MQVhost = os.Getenv("mq_vhost")
 
-	fmt.Print(appConf)
+	fmt.Printf("[INFO] ...... Initializing app configurations ......\n")
 }
 
 func (a *App) validatePodHealth(w http.ResponseWriter, r *http.Request) {
@@ -100,7 +100,7 @@ func (a *App) produceOrder(w http.ResponseWriter, r *http.Request) {
 
 	bodyBytes, err := io.ReadAll(r.Body)
 	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, "Error reading request body")
+		respondWithError(w, http.StatusInternalServerError, "[ERROR] Couldn't reading request body to produce order.\n")
 		return
 	}
 
@@ -108,11 +108,15 @@ func (a *App) produceOrder(w http.ResponseWriter, r *http.Request) {
 
 	decoder := json.NewDecoder(bytes.NewReader(bodyBytes))
 	if err := decoder.Decode(&o); err != nil {
-		respondWithError(w, http.StatusBadRequest, "Invalid request payload")
+		respondWithError(w, http.StatusBadRequest, "[ERROR] Invalid request payload to produce order.\n")
 		return
 	}
 
 	fmt.Printf("Body: %v\n", o)
+
+	fmt.Printf("[INFO] User %s asked to produce his order for cluster %s \n",
+		o.UserID,
+		o.ClusterName)
 
 	produce(
 		a.MQChannel,
